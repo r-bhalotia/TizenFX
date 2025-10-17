@@ -159,7 +159,7 @@ namespace Tizen.NUI.Components
         }
 
         // The ICollectionChangedNotifier methods are called by child observable items sources (i.e., the groups)
-        // This class can then translate their local changes into global positions for upstream notification 
+        // This class can then translate their local changes into global positions for upstream notification
         // (e.g., to the actual RecyclerView.Adapter, so that it can notify the RecyclerView and handle animating
         // the changes)
         public void NotifyDataSetChanged()
@@ -306,8 +306,8 @@ namespace Tizen.NUI.Components
 
         void Add(NotifyCollectionChangedEventArgs args)
         {
-            var groupIndex = args.NewStartingIndex > -1 ? args.NewStartingIndex : groupSource.IndexOf(args.NewItems[0]);
-            var groupCount = args.NewItems.Count;
+            var groupCount = args.NewItems?.Count ?? 0;
+            var groupIndex = args.NewStartingIndex > -1 ? args.NewStartingIndex : (groupCount > 0 ? groupSource.IndexOf(args.NewItems[0]) : -1);
 
             UpdateGroupTracking();
 
@@ -365,12 +365,12 @@ namespace Tizen.NUI.Components
             if(newItems == null || oldItems == null)
             {
                 return;
-            }       
+            }
             int groupCount = newItems.Count;
             int oldCount = oldItems.Count;
             if (groupCount != oldCount)
             {
-                // The original and replacement sets are of unequal size; this means that most everything currently in 
+                // The original and replacement sets are of unequal size; this means that most everything currently in
                 // view will have to be updated. So just reload the whole thing.
                 Reload();
                 return;
@@ -384,13 +384,13 @@ namespace Tizen.NUI.Components
 
             if (newItemCount != oldItemCount)
             {
-                // The original and replacement sets are of unequal size; this means that most everything currently in 
+                // The original and replacement sets are of unequal size; this means that most everything currently in
                 // view will have to be updated. So just reload the whole thing.
                 Reload();
                 return;
             }
 
-            // We are replacing one set of items with a set of equal size; we can do a simple item or range notification 
+            // We are replacing one set of items with a set of equal size; we can do a simple item or range notification
             var firstGroupIndex = Math.Min(newStartIndex, oldStartIndex);
             var absolutePosition = GetAbsolutePosition(groups[firstGroupIndex], 0);
 
@@ -462,12 +462,12 @@ namespace Tizen.NUI.Components
 
         int AdjustIndexForHeader(int index)
         {
-            return index - (HasHeader ? 1 : 0);
+            return index >= 0 ? index - (HasHeader ? 1 : 0) : -1;
         }
 
         int AdjustPositionForHeader(int position)
         {
-            return position + (HasHeader ? 1 : 0);
+            return position >= 0 ? position + (HasHeader ? 1 : 0) : -1;
         }
 
         int CountItemsInGroups(int groupStartIndex, int groupCount)

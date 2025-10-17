@@ -21,9 +21,9 @@ namespace Tizen.NUI
 {
 
     /// <summary>
-    /// The class that represents an object capable of animation is the parent class of the minimum unit of visual, View. 
-    /// When a property is an animatable property, it means that its value can change continuously as the target of an animation. 
-    /// In this case, if a property notification callback is set, you can receive the callback according to the changing values. 
+    /// The class that represents an object capable of animation is the parent class of the minimum unit of visual, View.
+    /// When a property is an animatable property, it means that its value can change continuously as the target of an animation.
+    /// In this case, if a property notification callback is set, you can receive the callback according to the changing values.
     /// Additionally, users can also add their own properties.
     /// </summary>
     /// <example><code>
@@ -124,6 +124,9 @@ namespace Tizen.NUI
         /// <since_tizen> 3 </since_tizen>
         public int GetPropertyIndex(string name)
         {
+            // Convert view synonym property names.
+            PropertyHelper.ConvertSynonymPropertyName(this, ref name);
+
             // Convert property string to be lowercase
             int ret = Interop.Handle.GetPropertyIndex(SwigCPtr, name);
             if (NDalicPINVOKE.SWIGPendingException.Pending) throw NDalicPINVOKE.SWIGPendingException.Retrieve();
@@ -202,6 +205,9 @@ namespace Tizen.NUI
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void SetProperty(string name, PropertyValue propertyValue)
         {
+            // Convert view synonym property names.
+            PropertyHelper.ConvertSynonymPropertyName(this, ref name);
+
             Property property = new Property(this, name);
             if (property.PropertyIndex == Property.InvalidIndex)
             {
@@ -212,6 +218,17 @@ namespace Tizen.NUI
                 Tizen.NUI.Object.SetProperty(SwigCPtr, property.PropertyIndex, propertyValue);
             }
             property.Dispose();
+        }
+
+        /// <summary>
+        /// Sets the map of values immediately.
+        /// </summary>
+        /// <param name="propertyMap">The list of index and new value of the property.</param>
+        /// This will not be public opened.
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void SetProperties(PropertyMap propertyMap)
+        {
+            Tizen.NUI.Object.SetProperties(SwigCPtr, propertyMap);
         }
 
         /// <summary>

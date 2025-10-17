@@ -815,7 +815,7 @@ namespace Tizen.NUI.BaseComponents
             if (NDalicPINVOKE.SWIGPendingException.Pending)
                 throw NDalicPINVOKE.SWIGPendingException.Retrieve();
 
-            EnsureLayoutExtraData()?.Layout?.RequestLayout();
+            RequestLayout();
         }
 
         /// <summary>
@@ -887,6 +887,23 @@ namespace Tizen.NUI.BaseComponents
                 throw NDalicPINVOKE.SWIGPendingException.Retrieve();
             }
             return internalCurrentWorldColor;
+        }
+
+        internal bool IsCurrentIgnored()
+        {
+            // TODO : Need to bind new API for current property getter
+            using var value = Object.GetCurrentProperty(SwigCPtr, Property.Ignored);
+            bool ret = false;
+            if (value != null)
+            {
+                value.Get(out ret);
+            }
+            return ret;
+        }
+
+        internal bool IsWorldIgnored()
+        {
+            return Object.InternalGetPropertyBool(SwigCPtr, Property.WorldIgnored);
         }
 
         internal void SetDrawMode(DrawModeType drawMode)
@@ -1423,6 +1440,15 @@ namespace Tizen.NUI.BaseComponents
             NUILog.Debug($"[Dispose] ID:{Interop.Actor.GetId(GetBaseHandleCPtrHandleRef)} Name:{Interop.Actor.GetName(GetBaseHandleCPtrHandleRef)}");
 
             _viewEventRareData?.ClearSignal();
+
+            if (offScreenRenderingFinishedCallback != null)
+            {
+                NUILog.Debug($"[Dispose] offScreenRenderingFinishedCallback");
+
+                Interop.ViewSignal.OffScreenRenderingFinishedDisconnect(GetBaseHandleCPtrHandleRef, offScreenRenderingFinishedCallback.ToHandleRef(this));
+                NDalicPINVOKE.ThrowExceptionIfExistsDebug();
+                offScreenRenderingFinishedCallback = null;
+            }
 
             if (onRelayoutEventCallback != null)
             {

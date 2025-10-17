@@ -27,6 +27,8 @@ namespace Tizen.NUI.BaseComponents
     /// <since_tizen> 3 </since_tizen>
     public class VideoView : View
     {
+        private bool isEnableOffscreenFrameRendering = false;
+
         /// This will be public opened after ACR done. Before ACR, need to be hidden as inhouse API.
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static readonly BindableProperty VideoProperty = null;

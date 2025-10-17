@@ -252,21 +252,6 @@ namespace Tizen.NUI.BaseComponents
                 return;
             }
 
-            if (webContext != null)
-            {
-                webContext.RegisterDownloadStartedCallback(null);
-                webContext.RegisterMimeOverriddenCallback(null);
-                webContext.RegisterHttpRequestInterceptedCallback(null);
-                webContext.Dispose();
-                webContext = null;
-            }
-
-            if (webCookieManager != null)
-            {
-                webCookieManager.Dispose();
-                webCookieManager = null;
-            }
-
             if (type == DisposeTypes.Explicit)
             {
                 //Called by User
@@ -447,7 +432,7 @@ namespace Tizen.NUI.BaseComponents
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate void WebViewUserMediaPermissionRequestCallback(IntPtr permission, string message);
-       
+
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         private delegate void webViewDeviceConnectionChangedCallback(int deviceType);
 
@@ -2725,7 +2710,12 @@ namespace Tizen.NUI.BaseComponents
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void EvaluateJavaScript(string script)
         {
-            Interop.WebView.EvaluateJavaScript(SwigCPtr, script, new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero));
+            if (SwigCPtr.Handle == IntPtr.Zero || IsDisposedOrQueued)
+            {
+                Log.Fatal("NUI", $"[ERROR] WebView has been disposed! IntPtr=0x{SwigCPtr.Handle:X} IsDisposedOrQueued={IsDisposedOrQueued}");
+                return;
+            }
+            Interop.WebView.EvaluateJavaScript(SwigCPtr, script, new HandleRef(null, IntPtr.Zero));
             if (NDalicPINVOKE.SWIGPendingException.Pending) throw NDalicPINVOKE.SWIGPendingException.Retrieve();
         }
 

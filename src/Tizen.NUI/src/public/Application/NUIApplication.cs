@@ -17,6 +17,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Reflection;
@@ -567,6 +568,12 @@ namespace Tizen.NUI
         /// Exits the NUIApplication.
         /// This method causes the application to terminate gracefully.
         /// </summary>
+        /// <remarks>
+        /// This method does not quit the application immediately.
+        /// It waits until all pending events are completely processed,
+        /// then registers a termination request during the main loop's idle state
+        /// and executes the termination at that time.
+        /// </remarks>
         /// <since_tizen> 4 </since_tizen>
         public override void Exit()
         {
@@ -677,6 +684,51 @@ namespace Tizen.NUI
             return ret;
         }
 
+        /// <summary>
+        /// Retrieves a list of all currently available screens.
+        /// This function queries the window system for all connected and active screens,
+        /// providing essential information for each. It is primarily intended for use
+        /// in multi-screen environments where an application might need to manage
+        /// windows across different displays.
+        /// </summary>
+        /// <returns>The array of screen information</returns>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        static public ScreenInformation[] GetAvailableScreens()
+        {
+            using PropertyArray propertyArray = new PropertyArray(Interop.Application.GetAvailableScreens(), true);
+            if (NDalicPINVOKE.SWIGPendingException.Pending) throw NDalicPINVOKE.SWIGPendingException.Retrieve();
+
+            ScreenInformation[] screenInformationArray = null;
+            if (propertyArray != null)
+            {
+                uint count = propertyArray.Count();
+                screenInformationArray = new ScreenInformation[count];
+                for (uint i = 0; i < count; i++)
+                {
+                    using (var screenInfoMap = new PropertyMap())
+                    {
+                        using (var propertyValue = propertyArray[i])
+                        {
+                            propertyValue.Get(screenInfoMap);
+                            if (screenInfoMap.Count() > 0)
+                            {
+                                string name = "";
+                                int width = 0;
+                                int height = 0;
+
+                                screenInfoMap["name"].Get(out name);
+                                screenInfoMap["width"].Get(out width);
+                                screenInfoMap["height"].Get(out height);
+
+                                var screenInfo = new ScreenInformation(name, width, height);
+                                screenInformationArray[i] = screenInfo;
+                            }
+                        }
+                    }
+                }
+            }
+            return screenInformationArray;
+        }
 
         /// <summary>
         /// The OnLocaleChanged method is called when the system locale settings have changed.
@@ -817,6 +869,16 @@ namespace Tizen.NUI
         [EditorBrowsable(EditorBrowsableState.Never)]
         static public void Preload()
         {
+            if (IsPreload)
+            {
+                Log.Error("NUI", "[NUI] Preload() called multiple. Ignore\n");
+                return;
+            }
+            if (Tizen.NUI.Application.Current != null)
+            {
+                Log.Error("NUI", "[NUI] Preload() Should be called before application created. Ignore\n");
+                return;
+            }
             Interop.Application.PreInitialize();
             SupportPreInitializedCreation = Interop.Application.IsSupportPreInitializedCreation();
 

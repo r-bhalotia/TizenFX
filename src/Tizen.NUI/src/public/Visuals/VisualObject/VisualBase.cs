@@ -80,7 +80,7 @@ namespace Tizen.NUI.Visuals
             }
 
             ~VisualTransformInfo() => Dispose(false);
-            
+
             public void Clear()
             {
                 width = 1.0f;
@@ -809,7 +809,7 @@ namespace Tizen.NUI.Visuals
         }
 
         /// <summary>
-        /// Set or Get visual property.
+        /// Get visual property.
         /// </summary>
         /// <remarks>
         /// This property might change the type of visual. We should not set it from subclass of VisualBase.
@@ -967,7 +967,7 @@ namespace Tizen.NUI.Visuals
             {
                 // If we cannot find result from cached map, Get value from native engine.
                 ret = GetCurrentVisualProperty(key);
-                
+
                 // Update cached value here
                 if (ret != null)
                 {

@@ -376,6 +376,32 @@ namespace Tizen.NUI.BaseComponents
         }
 
         /// <summary>
+        /// Retrieves ImageUrl of View's offscreen rendering result.
+        /// </summary>
+        /// <remarks>
+        /// Returns valid url only when View.OffScreenRendering is set to View.OffScreenRenderingType.RenderOnce
+        /// </remarks>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public ImageUrl GetOffScreenImageUrl()
+        {
+            IntPtr cPtr = Interop.View.GetOffScreenRenderingOutput(SwigCPtr);
+            if (cPtr == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            ImageUrl url = Registry.GetManagedBaseHandleFromNativePtr(cPtr) as ImageUrl;
+            if (url != null)
+            {
+                Interop.BaseHandle.DeleteBaseHandle(new HandleRef(this, cPtr));
+                NDalicPINVOKE.ThrowExceptionIfExists();
+                return url;
+            }
+            url = new ImageUrl(cPtr, true);
+            return url;
+        }
+
+        /// <summary>
         /// Shows the view.
         /// </summary>
         /// <remarks>
@@ -386,6 +412,7 @@ namespace Tizen.NUI.BaseComponents
         {
             SetVisible(true);
 
+#if !PROFILE_TV
             if (GetAccessibilityStates()[AccessibilityState.Modal])
             {
                 RegisterDefaultLabel();
@@ -395,6 +422,7 @@ namespace Tizen.NUI.BaseComponents
                     EmitAccessibilityStateChangedEvent(AccessibilityState.Showing, true);
                 }
             }
+#endif
         }
 
         /// <summary>
@@ -410,6 +438,7 @@ namespace Tizen.NUI.BaseComponents
         {
             SetVisible(false);
 
+#if !PROFILE_TV
             if (GetAccessibilityStates()[AccessibilityState.Modal])
             {
                 UnregisterDefaultLabel();
@@ -419,6 +448,7 @@ namespace Tizen.NUI.BaseComponents
                     EmitAccessibilityStateChangedEvent(AccessibilityState.Showing, false);
                 }
             }
+#endif
         }
 
         /// <summary>
@@ -1008,6 +1038,31 @@ namespace Tizen.NUI.BaseComponents
             Vector4 ret = new Vector4(Interop.Actor.CalculateScreenExtents(SwigCPtr), true);
             if (NDalicPINVOKE.SWIGPendingException.Pending) throw NDalicPINVOKE.SWIGPendingException.Retrieve();
             return ret;
+        }
+
+        /// <summary>
+        /// Adds a shadow to the view.
+        /// This method allows for the application of one or more shadow effects (either outer or inner shadows) to a view,
+        /// enabling complex and layered visual styles such as neumorphism.
+        /// </summary>
+        /// <param name="shadow">The shadow to add. This can be an instance of <see cref="Tizen.NUI.Shadow"/> for an outer shadow
+        /// or <see cref="Tizen.NUI.InnerShadow"/> for an inner shadow. If null, this method does nothing.</param>
+        /// <remarks>
+        /// Multiple shadows can be added to a single view by calling this method multiple times.
+        /// The added shadow will automatically inherit the view's <see cref="Tizen.NUI.BaseComponents.View.CornerRadius"/> property.
+        /// </remarks>
+        /// <seealso cref="Tizen.NUI.Shadow"/>
+        /// <seealso cref="Tizen.NUI.InnerShadow"/>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void AddShadow(Shadow shadow)
+        {
+            if(shadow == null)
+            {
+                return;
+            }
+
+            Visuals.ColorVisual shadowVisual = shadow.GetShadowVisual();
+            AddShadowVisualInternal(shadowVisual, (shadow is InnerShadow) ? ViewShadowType.InnerShadow : ViewShadowType.BoxShadow);
         }
 
         /// <summary>

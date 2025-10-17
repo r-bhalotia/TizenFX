@@ -59,5 +59,12 @@ namespace Tizen.NUI
         /// </summary>
         /// <since_tizen> 10 </since_tizen>
         Destroyed = 4,
+
+        /// <summary>
+        /// The pre-created state.
+        /// This state is set when the gadget is pre-created. The 'OnPreCreate()' method of the NUIGadget is called.
+        /// </summary>
+        /// <since_tizen> 13 </since_tizen>
+        PreCreated = 5,
     }
 }

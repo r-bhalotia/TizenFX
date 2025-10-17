@@ -22,7 +22,7 @@ using System.Collections.Specialized;
 namespace Tizen.NUI.Components
 {
     // Wraps a List which implements INotifyCollectionChanged (usually an ObservableCollection)
-    // and marshals all of the list modifications to the main thread. Modifications to the underlying 
+    // and marshals all of the list modifications to the main thread. Modifications to the underlying
     // collection which are made off of the main thread remain invisible to consumers on the main thread
     // until they have been processed by the main thread.
 
@@ -137,24 +137,28 @@ namespace Tizen.NUI.Components
         void Replace(NotifyCollectionChangedEventArgs args)
         {
             var startIndex = args.NewStartingIndex;
-            foreach (var item in args.NewItems)
+            if (args.NewItems != null)
             {
-                this[startIndex] = item;
-                startIndex += 1;
+                foreach (var item in args.NewItems)
+                {
+                    this[startIndex] = item;
+                    startIndex += 1;
+                }
             }
-
             OnCollectionChanged(args);
         }
 
         void Add(NotifyCollectionChangedEventArgs args)
         {
             var startIndex = args.NewStartingIndex;
-            foreach (var item in args.NewItems)
+            if (args.NewItems != null)
             {
-                Insert(startIndex, item);
-                startIndex += 1;
+                foreach (var item in args.NewItems)
+                {
+                    Insert(startIndex, item);
+                    startIndex += 1;
+                }
             }
-
             OnCollectionChanged(args);
         }
 

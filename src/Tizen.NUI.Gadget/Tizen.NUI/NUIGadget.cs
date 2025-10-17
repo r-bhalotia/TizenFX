@@ -31,8 +31,10 @@ namespace Tizen.NUI
     /// </remarks>
     /// <since_tizen> 10 </since_tizen>
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public abstract class NUIGadget
+    public abstract class NUIGadget : IUIGadget
     {
+        private static int s_ServiceNameSequence = 0;
+
         /// <summary>
         /// Initializes the gadget.
         /// </summary>
@@ -46,12 +48,47 @@ namespace Tizen.NUI
         {
             Type = type;
             State = NUIGadgetLifecycleState.Initialized;
+            Log.Info("Type=" + Type + ", State=" + State);
         }
 
-        internal event EventHandler<NUIGadgetLifecycleChangedEventArgs> LifecycleChanged;
+        /// <summary>
+        /// Initializes the gadget with OneShotService factory.
+        /// </summary>
+        /// <param name="type">The type of the NUIGadget.</param>
+        /// <param name="serviceFactory">The factory that can create OneShotService object</param>
+        /// <param name="autoClose">Whether to automatically close the service after execution</param>
+        /// <exception cref="ArgumentNullException">Thrown if either 'serviceFactory' is null.</exception>
+        /// <remarks>
+        /// This constructor initializes a new instance of the NUIGadget class based on the specified type with OneShotService.
+        /// It is important to provide the correct type argument in order to ensure proper functionality and compatibility with other components.
+        /// </remarks>
+        /// <since_tizen> 13 </since_tizen>
+        public NUIGadget(NUIGadgetType type, IServiceFactory serviceFactory, bool autoClose = true) : this(type)
+        {
+            if (serviceFactory == null)
+            {
+                throw new ArgumentNullException(nameof(serviceFactory));
+            }
+
+            AutoClose = autoClose;
+            ServiceFactory = serviceFactory;
+            Service = ServiceFactory.CreateService(GenerateOneShotServiceName(), AutoClose);
+            Service.LifecycleStateChanged += OnOneShotServiceLifecycleChanged;
+        }
 
         /// <summary>
-        /// Gets the class representing information of the current gadget.
+        /// Occurs when the lifecycle of the OneShotService is changed.
+        /// </summary>
+        /// <remarks>
+        /// This event is raised when the state of OneShotService changes.
+        /// It provides information about the current state through the 
+        /// OneShotServiceLifecycleChangedEventArgs argument.
+        /// </remarks>
+        /// <since_tizen> 13 </since_tizen>
+        public event EventHandler<OneShotServiceLifecycleChangedEventArgs> OneShotServiceLifecycleChanged;
+
+        /// <summary>
+        /// The class representing information of the current gadget.
         /// </summary>
         /// <remarks>
         /// This property is set before the OnCreate() is called, after the instance has been created.
@@ -66,7 +103,7 @@ namespace Tizen.NUI
         }
 
         /// <summary>
-        /// Gets the type of the NUI gadget.
+        /// The type of the NUI gadget.
         /// </summary>
         /// <since_tizen> 10 </since_tizen>
         public NUIGadgetType Type
@@ -76,7 +113,7 @@ namespace Tizen.NUI
         }
 
         /// <summary>
-        /// Gets the class name.
+        /// The class name.
         /// </summary>
         /// <remarks>
         /// This property is set before the OnCreate() is called, after the instance has been created.
@@ -90,7 +127,7 @@ namespace Tizen.NUI
         }
 
         /// <summary>
-        /// Gets the main view of the NUI gadget.
+        /// The main view of the NUI gadget.
         /// </summary>
         /// <since_tizen> 10 </since_tizen>
         public View MainView
@@ -100,7 +137,7 @@ namespace Tizen.NUI
         }
 
         /// <summary>
-        /// Gets the current lifecycle state of the gadget.
+        /// The current lifecycle state of the gadget.
         /// </summary>
         /// <since_tizen> 10 </since_tizen>
         public NUIGadgetLifecycleState State
@@ -110,7 +147,7 @@ namespace Tizen.NUI
         }
 
         /// <summary>
-        /// Gets the resource manager.
+        /// The resource manager.
         /// </summary>
         /// <remarks> This property is set before the OnCreate() is called, after the instance has been created.
         /// It provides access to various resources such as images, sounds, and fonts that can be used in your application.
@@ -124,71 +161,61 @@ namespace Tizen.NUI
             get;
         }
 
-        internal bool Create()
+        /// <summary>
+        /// The OneShotService.
+        /// </summary>
+        /// <since_tizen> 13 </since_tizen>
+        public OneShotService Service
         {
-            MainView = OnCreate();
-            if (MainView == null)
+            internal set;
+            get;
+        }
+
+        private IServiceFactory ServiceFactory
+        {
+            set; get;
+        }
+
+        private bool AutoClose
+        {
+            set; get;
+        }
+
+        private void OnOneShotServiceLifecycleChanged(object sender, OneShotServiceLifecycleChangedEventArgs args)
+        {
+            OneShotServiceLifecycleChanged?.Invoke(sender, args);
+
+            if (args.State == OneShotServiceLifecycleState.Destroyed)
             {
-                return false;
-            }
-
-            return true;
-        }
-
-        internal void Resume()
-        {
-            if (State == NUIGadgetLifecycleState.Created || State == NUIGadgetLifecycleState.Paused)
-                OnResume();
-        }
-
-        internal void Pause()
-        {
-            if (State == NUIGadgetLifecycleState.Resumed)
-                OnPause();
-        }
-
-        internal void Destroy()
-        {
-            if (State == NUIGadgetLifecycleState.Created || State == NUIGadgetLifecycleState.Paused)
-                OnDestroy();
-        }
-
-        internal void HandleAppControlReceivedEvent(AppControlReceivedEventArgs args)
-        {
-            OnAppControlReceived(args);
-        }
-
-        internal void HandleEvents(NUIGadgetEventType eventType, EventArgs args)
-        {
-            switch (eventType)
-            {
-                case NUIGadgetEventType.LocaleChanged:
-                    OnLocaleChanged((LocaleChangedEventArgs)args);
-                    break;
-                case NUIGadgetEventType.LowMemory:
-                    OnLowMemory((LowMemoryEventArgs)args);
-                    break;
-                case NUIGadgetEventType.LowBattery:
-                    OnLowBattery((LowBatteryEventArgs)args);
-                    break;
-                case NUIGadgetEventType.RegionFormatChanged:
-                    OnRegionFormatChanged((RegionFormatChangedEventArgs)args);
-                    break;
-                case NUIGadgetEventType.DeviceOrientationChanged:
-                    OnDeviceOrientationChanged((DeviceOrientationEventArgs)args);
-                    break;
-                default:
-                    Log.Warn("Unknown Event Type: " + eventType);
-                    break;
+                args.OneShotService.LifecycleStateChanged -= OnOneShotServiceLifecycleChanged;
             }
         }
 
         private void NotifyLifecycleChanged()
         {
-            var args = new NUIGadgetLifecycleChangedEventArgs();
-            args.State = State;
-            args.Gadget = this;
-            LifecycleChanged?.Invoke(null, args);
+            UIGadgetLifecycleEventBroker.NotifyLifecycleChanged(this);
+        }
+
+        private static string GenerateOneShotServiceName()
+        {
+            return $"OneShot+{s_ServiceNameSequence++}";
+        }
+
+        /// <summary>
+        /// Override this method to define the behavior when the gadget is pre-created.
+        /// Calling 'base.OnPreCreate()' is necessary in order to emit the 'NUIGadgetLifecycleChanged' event with the 'NUIGadgetLifecycleState.PreCreated' state.
+        /// </summary>
+        /// <since_tizen> 13 </since_tizen>
+        protected virtual void OnPreCreate()
+        {
+            State = NUIGadgetLifecycleState.PreCreated;
+            Log.Debug("ClassName=" + ClassName);
+            NotifyLifecycleChanged();
+            if (Service != null)
+            {
+                Log.Info($"PreCreate(), Service.Name = {Service.Name}");
+                Service.Run();
+            }
         }
 
         /// <summary>
@@ -200,6 +227,7 @@ namespace Tizen.NUI
         protected virtual Tizen.NUI.BaseComponents.View OnCreate()
         {
             State = NUIGadgetLifecycleState.Created;
+            Log.Debug("ClassName=" + ClassName);
             NotifyLifecycleChanged();
             return null;
         }
@@ -215,6 +243,7 @@ namespace Tizen.NUI
         /// <since_tizen> 10 </since_tizen>
         protected virtual void OnAppControlReceived(AppControlReceivedEventArgs e)
         {
+            Log.Debug("ClassName=" + ClassName);
         }
 
         /// <summary>
@@ -225,6 +254,7 @@ namespace Tizen.NUI
         protected virtual void OnDestroy()
         {
             State = NUIGadgetLifecycleState.Destroyed;
+            Log.Debug("ClassName=" + ClassName);
             NotifyLifecycleChanged();
         }
 
@@ -236,6 +266,7 @@ namespace Tizen.NUI
         protected virtual void OnPause()
         {
             State = NUIGadgetLifecycleState.Paused;
+            Log.Debug("ClassName=" + ClassName);
             NotifyLifecycleChanged();
         }
 
@@ -247,6 +278,7 @@ namespace Tizen.NUI
         protected virtual void OnResume()
         {
             State = NUIGadgetLifecycleState.Resumed;
+            Log.Debug("ClassName=" + ClassName);
             NotifyLifecycleChanged();
         }
 
@@ -255,54 +287,42 @@ namespace Tizen.NUI
         /// </summary>
         /// <param name="e">The locale changed event argument.</param>
         /// <since_tizen> 10 </since_tizen>
-        protected virtual void OnLocaleChanged(LocaleChangedEventArgs e)
-        {
-        }
+        protected virtual void OnLocaleChanged(LocaleChangedEventArgs e) { }
 
         /// <summary>
         /// Overrides this method if want to handle behavior when the system battery is low.
         /// </summary>
         /// <param name="e">The low batter event argument.</param>
         /// <since_tizen> 10 </since_tizen>
-        protected virtual void OnLowBattery(LowBatteryEventArgs e)
-        {
-        }
+        protected virtual void OnLowBattery(LowBatteryEventArgs e) { }
 
         /// <summary>
         /// Overrides this method if want to handle behavior when the system memory is low.
         /// </summary>
         /// <param name="e">The low memory event argument.</param>
         /// <since_tizen> 10 </since_tizen>
-        protected virtual void OnLowMemory(LowMemoryEventArgs e)
-        {
-        }
+        protected virtual void OnLowMemory(LowMemoryEventArgs e) { }
 
         /// <summary>
         /// Overrides this method if want to handle behavior when the region format is changed.
         /// </summary>
         /// <param name="e">The region format changed event argument.</param>
         /// <since_tizen> 10 </since_tizen>
-        protected virtual void OnRegionFormatChanged(RegionFormatChangedEventArgs e)
-        {
-        }
+        protected virtual void OnRegionFormatChanged(RegionFormatChangedEventArgs e) { }
 
         /// <summary>
         /// Overrides this method if want to handle behavior when the device orientation is changed.
         /// </summary>
         /// <param name="e">The device orientation changed event argument.</param>
         /// <since_tizen> 10 </since_tizen>
-        protected virtual void OnDeviceOrientationChanged(DeviceOrientationEventArgs e)
-        {
-        }
+        protected virtual void OnDeviceOrientationChanged(DeviceOrientationEventArgs e) { }
 
         /// <summary>
         /// Overrides this method if want to handle behavior when the message is received.
         /// </summary>
         /// <param name="e">The message received event argument.</param>
         /// <since_tizen> 13 </since_tizen>
-        protected virtual void OnMessageReceived(NUIGadgetMessageReceivedEventArgs e)
-        {
-        }
+        protected virtual void OnMessageReceived(NUIGadgetMessageReceivedEventArgs e) { }
 
         /// <summary>
         /// Sends the message to the gadget.
@@ -318,10 +338,7 @@ namespace Tizen.NUI
                 throw new ArgumentNullException(nameof(message));
             }
 
-            CoreApplication.Post(() =>
-            {
-                OnMessageReceived(new NUIGadgetMessageReceivedEventArgs(message));
-            });
+            CoreApplication.Post(() => OnMessageReceived(new NUIGadgetMessageReceivedEventArgs(message)));
         }
 
         /// <summary>
@@ -330,8 +347,45 @@ namespace Tizen.NUI
         /// <since_tizen> 10 </since_tizen>
         public void Finish()
         {
-            Pause();
-            Destroy();
+            if (State == NUIGadgetLifecycleState.Resumed)
+            {
+                OnPause();
+            }
+
+            if (State == NUIGadgetLifecycleState.PreCreated || State == NUIGadgetLifecycleState.Created || State == NUIGadgetLifecycleState.Paused)
+            {
+                OnDestroy();
+            }
         }
+
+        object IUIGadget.MainView { get => MainView; set => MainView = (View)value; }
+        string IUIGadget.ClassName { get => ClassName; set => ClassName = value; }
+        UIGadgetInfo IUIGadget.UIGadgetInfo { get => NUIGadgetInfo.UIGadgetInfo; set => NUIGadgetInfo = new NUIGadgetInfo(value); }
+        UIGadgetResourceManager IUIGadget.UIGadgetResourceManager { get => NUIGadgetResourceManager.UIGadgetResourceManager; set => NUIGadgetResourceManager = new NUIGadgetResourceManager(value); }
+        UIGadgetLifecycleState IUIGadget.State { get => (UIGadgetLifecycleState)State; set => State = (NUIGadgetLifecycleState)value; }
+
+        void IUIGadget.OnAppControlReceived(AppControlReceivedEventArgs args) => OnAppControlReceived(args);
+
+        void IUIGadget.OnLocaleChanged(LocaleChangedEventArgs args) => OnLocaleChanged(args);
+
+        void IUIGadget.OnRegionFormatChanged(RegionFormatChangedEventArgs args) => OnRegionFormatChanged(args);
+
+        void IUIGadget.OnLowMemory(LowMemoryEventArgs args) => OnLowMemory(args);
+
+        void IUIGadget.OnLowBattery(LowBatteryEventArgs args) => OnLowBattery(args);
+
+        void IUIGadget.OnDeviceOrientationChanged(DeviceOrientationEventArgs args) => OnDeviceOrientationChanged(args);
+
+        void IUIGadget.OnMessageReceived(UIGadgetMessageReceivedEventArgs e) => OnMessageReceived(new NUIGadgetMessageReceivedEventArgs(e.Message));
+
+        void IUIGadget.OnPreCreate() => OnPreCreate();
+
+        object IUIGadget.OnCreate() => OnCreate();
+
+        void IUIGadget.OnResume() => OnResume();
+
+        void IUIGadget.OnPause() => OnPause();
+
+        void IUIGadget.OnDestroy() => OnDestroy();
     }
 }

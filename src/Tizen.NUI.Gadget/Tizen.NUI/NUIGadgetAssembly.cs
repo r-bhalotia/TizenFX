@@ -19,7 +19,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
-
+using Tizen.Applications;
 using SystemIO = System.IO;
 
 namespace Tizen.NUI
@@ -51,6 +51,10 @@ namespace Tizen.NUI
 
         internal NUIGadgetAssembly(string assemblyPath) { _assemblyPath = assemblyPath; }
 
+        internal NUIGadgetAssembly(UIGadgetAssembly assembly) { UIGadgetAssembly = assembly;  }
+
+        internal UIGadgetAssembly UIGadgetAssembly { get; private set; }
+
         internal void Load()
         {
             lock (_assemblyLock)
@@ -77,6 +81,11 @@ namespace Tizen.NUI
 
         internal NUIGadget CreateInstance(string className)
         {
+            if (UIGadgetAssembly != null)
+            {
+                return (NUIGadget)UIGadgetAssembly.CreateInstance(className);
+            }
+
             lock (_assemblyLock)
             {
                 return (NUIGadget)_assembly?.CreateInstance(className);
@@ -87,7 +96,18 @@ namespace Tizen.NUI
         /// Property indicating whether the weak reference to the gadget assembly is still alive.
         /// </summary>
         /// <since_tizen> 12 </since_tizen>
-        public bool IsAlive {  get { return _assemblyRef.IsAlive; } }
+        public bool IsAlive 
+        {
+            get
+            { 
+                if (UIGadgetAssembly != null)
+                {
+                    return UIGadgetAssembly.IsAlive;
+                }
+
+                return _assemblyRef.IsAlive;
+            }
+        }
 
         internal void Unload()
         {

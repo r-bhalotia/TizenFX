@@ -95,12 +95,12 @@ namespace Tizen.NUI.Components
 
         int AdjustIndexForHeader(int index)
         {
-            return index - (HasHeader ? 1 : 0);
+            return index >= 0 ? index - (HasHeader ? 1 : 0) : -1;
         }
 
         int AdjustPositionForHeader(int position)
         {
-            return position + (HasHeader ? 1 : 0);
+            return position >= 0 ? position + (HasHeader ? 1 : 0) : -1;
         }
 
         void CollectionChanged(object sender, NotifyCollectionChangedEventArgs args)
@@ -143,7 +143,7 @@ namespace Tizen.NUI.Components
 
         void Move(NotifyCollectionChangedEventArgs args)
         {
-            var count = args.NewItems.Count;
+            var count = args.NewItems?.Count ?? 0;
 
             if (count == 1)
             {
@@ -159,9 +159,9 @@ namespace Tizen.NUI.Components
 
         void Add(NotifyCollectionChangedEventArgs args)
         {
-            var startIndex = args.NewStartingIndex > -1 ? args.NewStartingIndex : IndexOf(args.NewItems[0]);
+            var count = args.NewItems?.Count ?? 0;
+            var startIndex = args.NewStartingIndex > -1 ? args.NewStartingIndex : (count > 0 ? IndexOf(args.NewItems[0]) : -1);
             startIndex = AdjustPositionForHeader(startIndex);
-            var count = args.NewItems.Count;
 
             if (count == 1)
             {
@@ -206,14 +206,15 @@ namespace Tizen.NUI.Components
             {
                 return;
             }
-            var startIndex = args.NewStartingIndex > -1 ? args.NewStartingIndex : IndexOf(args.NewItems[0]);
-            startIndex = AdjustPositionForHeader(startIndex);
-            
             int newCount = newItems.Count;
             int oldCount = oldItems.Count;
+
             if (newCount == oldCount)
             {
-                // We are replacing one set of items with a set of equal size; we can do a simple item or range 
+                var startIndex = args.NewStartingIndex > -1 ? args.NewStartingIndex : newCount > 0 ? IndexOf(args.NewItems[0]) : -1;
+                startIndex = AdjustPositionForHeader(startIndex);
+
+                // We are replacing one set of items with a set of equal size; we can do a simple item or range
                 // notification to the adapter
                 if (newCount == 1)
                 {
@@ -227,7 +228,7 @@ namespace Tizen.NUI.Components
                 return;
             }
 
-            // The original and replacement sets are of unequal size; this means that everything currently in view will 
+            // The original and replacement sets are of unequal size; this means that everything currently in view will
             // have to be updated. So we just have to use NotifyDataSetChanged and let the RecyclerView update everything
             notifier.NotifyDataSetChanged();
         }
